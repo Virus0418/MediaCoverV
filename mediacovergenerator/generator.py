@@ -22,6 +22,7 @@ STYLE_FACTORIES: dict[str, tuple[str, str]] = {
     "static_1": ("mediacovergenerator.style.style_static_1", "create_style_static_1"),
     "static_2": ("mediacovergenerator.style.style_static_2", "create_style_static_2"),
     "static_3": ("mediacovergenerator.style.style_static_3", "create_style_static_3"),
+    "text_overlay": ("mediacovergenerator.style.style_text_overlay", "create_style_text_overlay"),
 }
 
 
@@ -52,7 +53,7 @@ class PosterGenerator:
         return 1
 
     def is_single_image_style(self, config: AppConfig) -> bool:
-        return config.cover.style in {"static_1", "static_2"}
+        return config.cover.style in {"static_1", "static_2", "text_overlay"}
 
     def library_cache_dir(self, config: AppConfig, library_name: str) -> Path:
         return resolve_path(self.project_root, config.paths.cache_dir) / self.sanitize_filename(library_name)
@@ -115,7 +116,11 @@ class PosterGenerator:
         title: ResolvedTitle,
         font_paths: tuple[Path, Path],
         stop_event,
+        library_id: str = "",
     ) -> str:
+        if config.cover.style == "text_overlay":
+            return self._render_text_overlay(config, library_name, library_id)
+
         from mediacovergenerator.utils.network_helper import validate_font_file
 
         if not validate_font_file(font_paths[0]) or not validate_font_file(font_paths[1]):
@@ -182,6 +187,36 @@ class PosterGenerator:
                 bg_color_config=bg_color_config,
             )
         raise ValueError(f"Unsupported style: {style}")
+
+    def _render_text_overlay(self, config: AppConfig, library_name: str, library_id: str) -> str:
+        from mediacovergenerator.text_layers import (
+            TextLayerMissingError,
+            missing_text_layer_message,
+            resolve_text_overlay_settings,
+            text_layer_file,
+        )
+
+        layer_path = text_layer_file(self.project_root, config, library_id)
+        if not layer_path.is_file():
+            message = missing_text_layer_message(library_name, library_id)
+            logger.warning(message)
+            raise TextLayerMissingError(message)
+        background = self.library_cache_dir(config, library_name) / "1.jpg"
+        if not background.is_file():
+            raise RuntimeError(f"媒体库「{library_name}」没有可用的背景图")
+        settings = resolve_text_overlay_settings(config, library_id)
+        return self._get_style_callable("text_overlay")(
+            str(background),
+            str(layer_path),
+            resolution_config=self._resolution_config(config),
+            darken=settings.darken,
+            blur_radius=settings.blur_radius,
+            saturation=settings.saturation,
+            vignette=settings.vignette,
+            text_scale=settings.text_scale,
+            text_offset_x=settings.text_offset_x,
+            text_offset_y=settings.text_offset_y,
+        )
 
     def decode_image(self, encoded: str) -> tuple[bytes, str, str]:
         content_type = "image/png"

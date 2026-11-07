@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from fastapi import Body, FastAPI, Header, HTTPException, Query, Request
+from fastapi import Body, FastAPI, File, Header, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -15,6 +15,16 @@ from mediacovergenerator.models import (
     HistoryRecord,
     JobSummary,
     LibraryInfo,
+    PreviewRequest,
+    PreviewResponse,
+)
+from mediacovergenerator.text_layers import (
+    TextLayerMissingError,
+    apply_preview_overrides,
+    delete_text_layer,
+    list_text_layer_ids,
+    store_text_layer,
+    text_layer_file,
 )
 from mediacovergenerator.scheduler import AppScheduler
 from mediacovergenerator.storage import ConfigRepository, HistoryRepository, WebhookRepository
@@ -97,6 +107,67 @@ def get_libraries() -> list[LibraryInfo]:
         raise HTTPException(status_code=400, detail="Emby is not configured")
     try:
         return client.list_libraries()
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@app.get("/text-layers")
+def get_text_layers() -> dict[str, list[str]]:
+    config = config_repository.load()
+    return {"library_ids": list_text_layer_ids(PROJECT_ROOT, config)}
+
+
+@app.get("/libraries/{library_id}/text-layer")
+def get_text_layer(library_id: str) -> FileResponse:
+    config = config_repository.load()
+    try:
+        path = text_layer_file(PROJECT_ROOT, config, library_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="还没有上传文字层")
+    return FileResponse(path, media_type="image/png", headers={"Cache-Control": "no-cache"})
+
+
+@app.post("/libraries/{library_id}/text-layer")
+async def upload_text_layer(library_id: str, file: UploadFile = File(...)) -> dict[str, object]:
+    config = config_repository.load()
+    raw = await file.read()
+    try:
+        path = store_text_layer(PROJECT_ROOT, config, library_id, raw)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return {"saved": True, "library_id": path.stem, "bytes": path.stat().st_size}
+
+
+@app.delete("/libraries/{library_id}/text-layer")
+def remove_text_layer(library_id: str) -> dict[str, bool]:
+    config = config_repository.load()
+    try:
+        deleted = delete_text_layer(PROJECT_ROOT, config, library_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if not deleted:
+        raise HTTPException(status_code=404, detail="还没有上传文字层")
+    return {"deleted": True}
+
+
+@app.post("/libraries/{library_id}/preview", response_model=PreviewResponse)
+def preview_library(library_id: str, request: PreviewRequest | None = Body(default=None)) -> PreviewResponse:
+    config = config_repository.load()
+    try:
+        config = apply_preview_overrides(config, library_id, request or PreviewRequest())
+        from mediacovergenerator.service import LibraryUpdateService
+
+        return LibraryUpdateService(PROJECT_ROOT, history_repository).preview_text_overlay(config, library_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except TextLayerMissingError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="找不到这个媒体库") from exc
+    except HTTPException:
+        raise
     except Exception as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 

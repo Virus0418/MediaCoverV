@@ -1,0 +1,32 @@
+---
+description: MediaCoverV 项目约定与历史优化
+alwaysApply: true
+---
+
+# MediaCoverV
+
+给 Emby 媒体库生成封面的独立服务。FastAPI + uvicorn，WebUI 端口 38100。图像用 Pillow 和 numpy。配置、历史、素材都在 `data/`，Docker 挂载为 `/app/data`。
+
+## 核心结构
+
+- `mediacovergenerator/api.py`：HTTP 接口和页面
+- `mediacovergenerator/service.py`：从 Emby 取图、回写封面
+- `mediacovergenerator/generator.py`：按风格调用渲染
+- `mediacovergenerator/style/`：风格实现。`static_1` / `static_2` / `static_3` 是原有风格
+- `mediacovergenerator/web/index.html`：中文 WebUI
+- `mediacovergenerator/models.py` 与 `storage.py`：配置模型，落在 `data/config.json`
+
+## 开发约定
+
+- 新风格沿用现有风格工厂和配置保存方式，不改旧风格的入参和行为
+- 页面文案用简体中文，控件风格跟现有面板一致
+- 图像处理要能在 512MB 容器里跑：用 Pillow，或小尺寸 float32；不要做整幅 float64 数组
+- 运行时数据放在 `data/`，换文件后下次生成直接读盘，不依赖重启
+
+## 优化记录
+
+### 文字层叠加
+
+- 目标：新增封面风格，用媒体库剧照铺满背景，再叠每个库自己的透明 PNG
+- 做法：风格键 `text_overlay`。背景优先 Backdrop，没有再用海报。文字层存在 `data/text_layers/<库ID>.png`，页面可上传、替换、删除和预览。效果参数写在 `cover.text_overlay`，单库可用 `library_titles[].text_overlay` 覆盖。没有 PNG 的库跳过并写明原因，不回退到其他风格
+- 要点：预览接口不上传 Emby。模糊、压暗、饱和度、暗角和文字层缩放都在渲染时从磁盘读取最新 PNG
