@@ -27,6 +27,7 @@
 - 按定时任务自动生成
 - 通过 Emby Webhook 在新片入库后自动更新
 - 给某个媒体库放本地素材图，直接拿本地图生成
+- 给每个媒体库上传一张透明文字层，叠在剧照背景上（文字层叠加）
 
 ## 2. 最推荐的安装方式
 
@@ -119,13 +120,16 @@ Emby 服务地址：http://192.168.1.100:8096
 
 在 `封面风格` 面板里可以选择：
 
-- 4 种静态风格
+- 风格 1、风格 2、风格 3
+- 文字层叠加：用媒体库剧照做全幅背景，再叠上这个库自己的透明文字层
 
 新手建议先用：
 
-- 静态风格
+- 风格 1
 - 默认字体
 - 默认分辨率
+
+如果要用文字层叠加，先在对应媒体库卡片里上传 PNG，再用「预览封面」调压暗、模糊和缩放。预览不会写回 Emby。
 
 先确认整条链路能跑通，再去调整进阶参数。
 
@@ -276,6 +280,8 @@ docker compose -f compose.yaml -f compose.build.yaml up -d --build
   最近生成的封面备份
 - `data/fonts/`
   你自己额外放的字体
+- `data/text_layers/`
+  每个媒体库自己的透明文字层，文件名是媒体库 ID，例如 `data/text_layers/库ID.png`
 
 ### 6.1 本地素材怎么放
 
@@ -296,6 +302,41 @@ data/input/电影/3.jpg
 ```
 
 只要媒体库名对得上，这个媒体库就会优先用你放进去的图片。
+
+文字层叠加也会优先用这里的图做背景；目录是空的时候，才去 Emby 取剧照。
+
+### 6.2 文字层怎么上传
+
+文字层叠加（风格 4）不在封面上画字，而是把透明 PNG 盖上去。
+
+每个媒体库按这个顺序找文字层：
+
+1. 你上传的自定义图：`data/text_layers/<媒体库ID>.png`
+2. 在该库卡片里指定的内置图层
+3. 按库名自动匹配内置图层：先完全一致，再看内置名称和库名谁包含谁
+4. 还是没有：跳过这个库，任务日志和页面都会写明原因，不会改用风格 1/2/3
+
+内置图层跟着程序走，在 `mediacovergenerator/assets/text_layers/picStyle1/`，更新镜像就会带上，不放在数据盘里。目前有：动漫、动画电影、华语电影、合集、国产剧、外语电影、日韩剧、欧美剧、纪录片、综艺。
+
+页面上每个库会标出当前来源：`自定义`、`内置:名称`、`自动匹配:名称` 或 `未匹配`。可以改下拉框，也可以点缩略图。删掉自定义上传后，会回到内置或自动匹配。
+
+也可以直接把自定义文件放到：
+
+```text
+data/text_layers/<媒体库ID>.png
+```
+
+容器里的路径是 `/app/data/text_layers/<媒体库ID>.png`。替换这个文件，或者在页面上重新上传，下一次生成就会用新图，不用重启容器。
+
+这一风格的背景固定优先剧照 / Fanart，没有剧照才用海报，不受「选图优先来源」影响。背景用哪一条，由「背景条目」决定：
+
+- `每次随机`
+- `最近入库`
+- `固定条目`：在该库填写 Emby 条目 ID。留空，或这条已经不可用时，会改用最近入库并写进日志
+
+压暗、模糊、饱和度、暗角、文字层缩放和偏移有一套全局默认，也可以在单个媒体库里勾选「单独调整本库效果」。这些都写在 `data/config.json`。
+
+文字层会按原比例放进画面，默认尽量贴合画布并居中。偏移的单位是画布宽高的百分比。
 
 ## 7. 手动运行方式
 
@@ -433,7 +474,15 @@ data/config.json
 `compose.yaml` 默认使用：
 
 - 容器名：`mediacovergenerator`
-- 镜像名：`ghcr.io/a39908646/mediacovergenerator:latest`
+- 镜像名：`ghcr.io/virus0418/mediacovergenerator:latest`
+
+这是本仓库自己的镜像。NAS 上如果还在跑上游 `ghcr.io/a39908646/mediacovergenerator:latest`，需要改成上面这个名字再更新，文字层叠加才会进来。
+
+镜像由 GitHub Actions 在推送到 `main` 或打 `v*` 标签时构建，并推到当前仓库所属的 GHCR（`ghcr.io/<仓库所有者小写>/mediacovergenerator`）。这个 fork 的所有者是 `Virus0418`，所以发布出来的名字是 `ghcr.io/virus0418/mediacovergenerator`。第一次推送完成前，可以用本地构建：
+
+```bash
+docker compose -f compose.yaml -f compose.build.yaml up -d --build
+```
 
 ## 11. 项目目录说明
 
@@ -455,6 +504,14 @@ MediaCoverGenerator/
 - `GET /config`
 - `PUT /config`
 - `GET /libraries`
+- `GET /text-layers`
+- `GET /text-layers/builtins`
+- `GET /text-layers/builtins/{name}/thumb`
+- `POST /text-layers/resolve`
+- `GET /libraries/{libraryId}/text-layer`
+- `POST /libraries/{libraryId}/text-layer`
+- `DELETE /libraries/{libraryId}/text-layer`
+- `POST /libraries/{libraryId}/preview`
 - `POST /jobs/generate`
 - `POST /jobs/generate/{libraryId}`
 - `GET /jobs`

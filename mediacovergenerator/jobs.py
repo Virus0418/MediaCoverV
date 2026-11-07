@@ -123,7 +123,12 @@ class JobManager:
                     current = self._snapshot(job_id)
                     self._update(job_id, completed_libraries=current.completed_libraries + 1)
                 except Exception as exc:
-                    logger.exception("Library update failed for %s", library.name)
+                    from mediacovergenerator.text_layers import TextLayerMissingError
+
+                    if isinstance(exc, TextLayerMissingError):
+                        logger.warning("%s", exc)
+                    else:
+                        logger.exception("Library update failed for %s", library.name)
                     current = self._snapshot(job_id)
                     self._update(
                         job_id,

@@ -391,6 +391,173 @@
       gap: 12px;
     }
 
+    input[type="range"] {
+      padding: 8px 0;
+      border: 0;
+      background: transparent;
+      accent-color: var(--brand);
+    }
+
+    .text-layer-box {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(89, 65, 32, 0.10);
+    }
+
+    .text-layer-row {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .text-layer-thumb {
+      width: 168px;
+      height: 94px;
+      object-fit: contain;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background-color: #efe6d8;
+      background-image:
+        linear-gradient(45deg, rgba(88, 67, 37, 0.12) 25%, transparent 25%),
+        linear-gradient(-45deg, rgba(88, 67, 37, 0.12) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, rgba(88, 67, 37, 0.12) 75%),
+        linear-gradient(-45deg, transparent 75%, rgba(88, 67, 37, 0.12) 75%);
+      background-size: 16px 16px;
+      background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+    }
+
+    .text-layer-empty {
+      width: 168px;
+      height: 94px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+      border: 1px dashed rgba(89, 65, 32, 0.28);
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .layer-source {
+      margin: 8px 0 4px;
+      font-size: 13px;
+      color: var(--text);
+    }
+
+    .layer-source.warn {
+      color: var(--warn);
+    }
+
+    .builtin-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    button.builtin-card {
+      width: 100%;
+      padding: 6px 6px 8px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.72);
+      color: var(--text);
+      font-weight: 500;
+      box-shadow: none;
+    }
+
+    button.builtin-card img {
+      width: 100%;
+      height: 54px;
+      object-fit: contain;
+      border-radius: 8px;
+      background-color: #efe6d8;
+      background-image:
+        linear-gradient(45deg, rgba(88, 67, 37, 0.12) 25%, transparent 25%),
+        linear-gradient(-45deg, rgba(88, 67, 37, 0.12) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, rgba(88, 67, 37, 0.12) 75%),
+        linear-gradient(-45deg, transparent 75%, rgba(88, 67, 37, 0.12) 75%);
+      background-size: 12px 12px;
+      background-position: 0 0, 0 6px, 6px -6px, -6px 0;
+    }
+
+    button.builtin-card span {
+      display: block;
+      margin-top: 4px;
+      font-size: 12px;
+      text-align: center;
+    }
+
+    button.builtin-card.active,
+    button.builtin-card.matched {
+      border-color: var(--brand);
+      box-shadow: 0 0 0 2px rgba(164, 74, 40, 0.18);
+    }
+
+    .library-override {
+      margin-top: 10px;
+    }
+
+    .check-line {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 10px 0 0;
+      font-size: 14px;
+    }
+
+    .check-line input {
+      width: auto;
+      padding: 0;
+    }
+
+    .preview-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: rgba(42, 36, 26, 0.46);
+    }
+
+    .preview-dialog {
+      width: min(960px, 100%);
+      max-height: calc(100vh - 40px);
+      overflow: auto;
+      padding: 16px;
+      border-radius: 24px;
+      border: 1px solid var(--line);
+      background: rgba(255, 251, 244, 0.98);
+      box-shadow: 0 24px 60px rgba(42, 36, 26, 0.24);
+    }
+
+    .preview-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .preview-head h3 {
+      margin: 0;
+      font-size: 18px;
+    }
+
+    .preview-head .mini-actions {
+      margin-top: 0;
+    }
+
+    .preview-dialog img {
+      display: block;
+      width: 100%;
+      border-radius: 16px;
+      background: #1c1915;
+    }
+
     .hidden {
       display: none !important;
     }
@@ -912,7 +1079,7 @@
             <section class="style-group">
               <h3>基本参数</h3>
               <div class="fields">
-                <div>
+                <div id="usePrimaryField">
                   <label for="usePrimary">选图优先来源</label>
                   <select id="usePrimary">
                     <option value="false">背景图优先</option>
@@ -936,7 +1103,7 @@
                   <label for="customHeight">自定义高度</label>
                   <input id="customHeight" type="number" min="1" step="1" placeholder="1080">
                 </div>
-                <div>
+                <div id="multiBlurField">
                   <label for="multiBlur">九宫格背景</label>
                   <select id="multiBlur">
                     <option value="true">模糊背景</option>
@@ -944,17 +1111,63 @@
                   </select>
                   <div class="hint">主要影响静态 3 的九宫格背景表现。</div>
                 </div>
-                <div>
+                <div id="blurSizeField">
                   <label for="blurSize">背景模糊强度</label>
                   <input id="blurSize" type="number" min="0" step="1" placeholder="50">
                 </div>
-                <div>
+                <div id="colorRatioField">
                   <label for="colorRatio">背景颜色混合占比</label>
                   <input id="colorRatio" type="number" min="0" max="1" step="0.05" placeholder="0.8">
                 </div>
               </div>
             </section>
-            <section class="style-group">
+            <section class="style-group hidden" id="textOverlaySettings">
+              <h3>文字层叠加</h3>
+              <div class="fields">
+                <div>
+                  <label for="overlayDarken">压暗程度 <span id="overlayDarkenValue">0.45</span></label>
+                  <input id="overlayDarken" type="range" min="0" max="1" step="0.01" value="0.45">
+                  <div class="hint">0 是原图亮度，1 会压成近乎全黑。默认用一层半透明黑来压暗背景。</div>
+                </div>
+                <div>
+                  <label for="overlayBlur">背景模糊 <span id="overlayBlurValue">18</span></label>
+                  <input id="overlayBlur" type="range" min="0" max="40" step="1" value="18">
+                </div>
+                <div>
+                  <label for="overlaySaturation">饱和度 <span id="overlaySaturationValue">0.85</span></label>
+                  <input id="overlaySaturation" type="range" min="0" max="2" step="0.01" value="0.85">
+                  <div class="hint">1 为原图饱和度，0 为灰度。</div>
+                </div>
+                <div>
+                  <label for="overlayVignette">暗角强度 <span id="overlayVignetteValue">0.40</span></label>
+                  <input id="overlayVignette" type="range" min="0" max="1" step="0.01" value="0.40">
+                </div>
+                <div>
+                  <label for="overlayTextScale">文字层缩放 <span id="overlayTextScaleValue">1.00</span></label>
+                  <input id="overlayTextScale" type="range" min="0.2" max="1.5" step="0.01" value="1">
+                  <div class="hint">按原比例放进画面。1 表示在不拉伸的前提下尽量贴合画布。</div>
+                </div>
+                <div>
+                  <label for="overlayOffsetX">水平偏移 <span id="overlayOffsetXValue">0</span>%</label>
+                  <input id="overlayOffsetX" type="range" min="-40" max="40" step="1" value="0">
+                </div>
+                <div>
+                  <label for="overlayOffsetY">垂直偏移 <span id="overlayOffsetYValue">0</span>%</label>
+                  <input id="overlayOffsetY" type="range" min="-40" max="40" step="1" value="0">
+                </div>
+                <div>
+                  <label for="overlayBackgroundPick">背景条目</label>
+                  <select id="overlayBackgroundPick">
+                    <option value="random">每次随机</option>
+                    <option value="latest">最近入库</option>
+                    <option value="fixed">固定条目</option>
+                  </select>
+                  <div class="hint">优先用剧照 / Fanart，没有再退回海报。固定条目要在对应媒体库里填 Emby 条目 ID，留空则改用最近入库。</div>
+                </div>
+              </div>
+              <div class="hint">这是全局默认，可被单个媒体库覆盖。每个库优先用自己上传的 PNG；没有的话用页面里选的内置图层，或按库名自动匹配。都对不上时跳过该库，并在任务里留下说明。</div>
+            </section>
+            <section class="style-group" id="titleFontSettings">
               <h3>标题与字体</h3>
               <div class="fields">
                 <div>
@@ -1057,6 +1270,19 @@
       </section>
     </div>
 
+    <div id="previewModal" class="preview-modal hidden">
+      <div class="preview-dialog" role="dialog" aria-modal="true" aria-labelledby="previewTitle">
+        <div class="preview-head">
+          <h3 id="previewTitle">封面预览</h3>
+          <div class="mini-actions">
+            <button class="secondary" id="lockPreviewItem" type="button">锁定此条目</button>
+            <button class="secondary" id="closePreview" type="button">关闭</button>
+          </div>
+        </div>
+        <img id="previewImage" alt="封面预览">
+        <div id="previewMeta" class="hint"></div>
+      </div>
+    </div>
     <div id="actionNotice" class="action-notice"></div>
     <div class="floating-actions">
       <button id="saveConfig" class="floating-save" type="button">已保存</button>
@@ -1069,6 +1295,10 @@
       selectedLibraryIds: [],
       librarySelectionInitialized: false,
       libraries: [],
+      textLayerIds: [],
+      builtinLayers: [],
+      previewLibraryId: "",
+      previewItemId: "",
       jobs: [],
       historyItems: [],
       selectedJobIds: [],
@@ -1101,13 +1331,29 @@
         image: "/assets/images/style_3.jpeg",
         description: "九宫格拼贴，更能体现一个媒体库的内容密度，适合混合内容库。",
         hint: "多图风格。会尽量准备 9 张图，不够会自动补齐。"
+      },
+      text_overlay: {
+        index: 4,
+        title: "文字层叠加",
+        image: "/assets/images/style_text_overlay.jpeg",
+        description: "用媒体库剧照铺满背景，再叠上这个库自己的透明文字层。",
+        hint: "单图风格。优先背景图。每个库单独上传 PNG，没有 PNG 的库会跳过。"
       }
     };
 
+    const STYLE_ORDER = ["static_1", "static_2", "static_3", "text_overlay"];
+
     const STYLE_CARD_META = {
-      1: { image: "/assets/images/style_1.jpeg", title: "风格 1", note: "最稳，适合大多数库。" },
-      2: { image: "/assets/images/style_2.jpeg", title: "风格 2", note: "版式更强，画面更利落。" },
-      3: { image: "/assets/images/style_3.jpeg", title: "风格 3", note: "九宫格，更强调内容密度。" }
+      static_1: { image: "/assets/images/style_1.jpeg", title: "风格 1", note: "最稳，适合大多数库。" },
+      static_2: { image: "/assets/images/style_2.jpeg", title: "风格 2", note: "版式更强，画面更利落。" },
+      static_3: { image: "/assets/images/style_3.jpeg", title: "风格 3", note: "九宫格，更强调内容密度。" },
+      text_overlay: { image: "/assets/images/style_text_overlay.jpeg", title: "文字层叠加", note: "剧照打底，叠上每个库自己的透明字。" }
+    };
+
+    const SOURCE_KIND_LABEL = {
+      backdrop: "背景图",
+      primary: "海报",
+      local: "本地素材"
     };
 
     const SORT_META = {
@@ -1135,19 +1381,13 @@
       return type.includes("application/json") ? response.json() : response.text();
     }
 
-    function composeStyle(index) {
-      const safeIndex = Math.min(3, Math.max(1, Number(index) || 1));
-      return `static_${safeIndex}`;
-    }
-
     function parseStyle(style) {
       const safeStyle = STYLE_META[style] ? style : "static_1";
-      const meta = STYLE_META[safeStyle];
-      return { index: meta.index, style: safeStyle };
+      return { style: safeStyle, index: STYLE_META[safeStyle].index };
     }
 
-    function setStyleChoice(index) {
-      const nextStyle = composeStyle(index);
+    function setStyleChoice(style) {
+      const nextStyle = parseStyle(style).style;
       const currentStyle = document.getElementById("style").value;
       document.getElementById("style").value = nextStyle;
       if (nextStyle !== currentStyle) {
@@ -1157,26 +1397,26 @@
     }
 
     function renderStyleSelector() {
-      const { index } = parseStyle(document.getElementById("style").value);
-      document.getElementById("styleGrid").innerHTML = [1, 2, 3].map((styleIndex) => {
-        const item = STYLE_CARD_META[styleIndex];
-        const active = styleIndex === index ? "active" : "";
+      const { style } = parseStyle(document.getElementById("style").value);
+      document.getElementById("styleGrid").innerHTML = STYLE_ORDER.map((styleKey) => {
+        const item = STYLE_CARD_META[styleKey];
+        const active = styleKey === style ? "active" : "";
         return `
-          <button class="style-card ${active}" data-style-index="${styleIndex}" type="button">
+          <button class="style-card ${active}" data-style-key="${styleKey}" type="button">
             <img src="${item.image}" alt="${item.title}">
             <div class="style-card-body">
               <div class="style-card-title">
                 <span>${item.title}</span>
-                ${styleIndex === index ? `<span class="badge">当前</span>` : ""}
+                ${styleKey === style ? `<span class="badge">当前</span>` : ""}
               </div>
               <div class="style-card-note">${item.note}</div>
             </div>
           </button>
         `;
       }).join("");
-      document.querySelectorAll("[data-style-index]").forEach((button) => {
+      document.querySelectorAll("[data-style-key]").forEach((button) => {
         button.addEventListener("click", () => {
-          setStyleChoice(button.dataset.styleIndex);
+          setStyleChoice(button.dataset.styleKey);
         });
       });
       renderStyleFieldVisibility();
@@ -1184,8 +1424,45 @@
 
     function renderStyleFieldVisibility() {
       const customResolution = document.getElementById("resolution").value === "custom";
+      const textOverlay = parseStyle(document.getElementById("style").value).style === "text_overlay";
       document.getElementById("customWidthField").classList.toggle("hidden", !customResolution);
       document.getElementById("customHeightField").classList.toggle("hidden", !customResolution);
+      document.getElementById("textOverlaySettings").classList.toggle("hidden", !textOverlay);
+      document.getElementById("titleFontSettings").classList.toggle("hidden", textOverlay);
+      document.getElementById("usePrimaryField").classList.toggle("hidden", textOverlay);
+      document.getElementById("multiBlurField").classList.toggle("hidden", textOverlay);
+      document.getElementById("blurSizeField").classList.toggle("hidden", textOverlay);
+      document.getElementById("colorRatioField").classList.toggle("hidden", textOverlay);
+      document.body.classList.toggle("style-text-overlay", textOverlay);
+    }
+
+    function formatOverlayNumber(value, digits) {
+      const number = Number(value);
+      if (!Number.isFinite(number)) return "";
+      return digits > 0 ? number.toFixed(digits) : String(Math.round(number));
+    }
+
+    function syncOverlayReadouts() {
+      const pairs = [
+        ["overlayDarken", "overlayDarkenValue", 2],
+        ["overlayBlur", "overlayBlurValue", 0],
+        ["overlaySaturation", "overlaySaturationValue", 2],
+        ["overlayVignette", "overlayVignetteValue", 2],
+        ["overlayTextScale", "overlayTextScaleValue", 2],
+        ["overlayOffsetX", "overlayOffsetXValue", 0],
+        ["overlayOffsetY", "overlayOffsetYValue", 0]
+      ];
+      pairs.forEach(([inputId, outputId, digits]) => {
+        const input = document.getElementById(inputId);
+        const output = document.getElementById(outputId);
+        if (input && output) output.textContent = formatOverlayNumber(input.value, digits);
+      });
+      document.querySelectorAll("[data-overlay-field]").forEach((input) => {
+        const readout = input.parentElement?.querySelector("[data-overlay-readout]");
+        if (!readout) return;
+        const digits = input.dataset.digits ? Number(input.dataset.digits) : 0;
+        readout.textContent = formatOverlayNumber(input.value, digits);
+      });
     }
 
     function renderSortMeta() {
@@ -1390,43 +1667,129 @@
 
     function renderLibraryRows() {
       document.getElementById("libraries").innerHTML = state.libraries.map(libraryOption).join("") || '<div class="item">没有媒体库</div>';
-      document.querySelectorAll("[data-library-id]").forEach((checkbox) => {
-        checkbox.addEventListener("change", (event) => {
-          const id = event.target.dataset.libraryId;
-          if (event.target.checked) {
-            if (!state.selectedLibraryIds.includes(id)) state.selectedLibraryIds.push(id);
-          } else {
-            state.selectedLibraryIds = state.selectedLibraryIds.filter((item) => item !== id);
-          }
-          updateLibrarySummary(state.libraries.length);
-        });
-      });
+      document.querySelectorAll("#libraries select").forEach((select) => buildCustomSelect(select));
+      syncOverridePanels();
+      syncOverlayReadouts();
+    }
+
+    function overlayValue(override, globalSettings, key) {
+      if (override && override[key] !== null && override[key] !== undefined && override[key] !== "") {
+        return override[key];
+      }
+      return globalSettings?.[key];
     }
 
     function libraryOption(library) {
       const checked = state.selectedLibraryIds.includes(library.id) ? "checked" : "";
       const titleConfig = getLibraryTitleConfig(library);
+      const overlay = titleConfig.text_overlay || {};
+      const globalOverlay = state.config?.cover?.text_overlay || {};
+      const hasLayer = state.textLayerIds.includes(library.id);
+      const enabled = overlay.enabled ? "checked" : "";
+      const pick = overlayValue(overlay, globalOverlay, "background_pick") || "random";
+      const selectedBuiltin = overlay.builtin_layer || "";
+      const libraryId = escapeHtml(library.id);
+      const builtinOptions = [`<option value="" ${selectedBuiltin === "" ? "selected" : ""}>自动匹配</option>`]
+        .concat((state.builtinLayers || []).map((layer) => `<option value="${escapeHtml(layer.name)}" ${selectedBuiltin === layer.name ? "selected" : ""}>${escapeHtml(layer.name)}</option>`))
+        .join("");
+      const builtinCards = (state.builtinLayers || []).map((layer) => `
+        <button type="button" class="builtin-card ${selectedBuiltin === layer.name ? "active" : ""}" data-builtin-pick="${libraryId}" data-builtin-name="${escapeHtml(layer.name)}">
+          <img src="/text-layers/builtins/${encodeURIComponent(layer.name)}/thumb" alt="${escapeHtml(layer.name)}">
+          <span>${escapeHtml(layer.name)}</span>
+        </button>
+      `).join("");
       return `
         <div class="library-config-row">
           <div class="library-config-head">
             <label class="library-config-toggle">
-              <input type="checkbox" data-library-id="${library.id}" ${checked}>
-              <span class="library-config-name">${library.name}</span>
+              <input type="checkbox" data-library-select="${libraryId}" ${checked}>
+              <span class="library-config-name">${escapeHtml(library.name)}</span>
             </label>
             <span class="badge">${normalizeLibraryType(library.collection_type)}</span>
           </div>
           <div class="library-config-fields">
             <label>
               主标题
-              <input data-field="zh_title" data-library-id="${library.id}" value="${escapeHtml(titleConfig.zh_title || library.name)}" placeholder="${escapeHtml(library.name)}">
+              <input data-field="zh_title" data-library-id="${libraryId}" value="${escapeHtml(titleConfig.zh_title || library.name)}" placeholder="${escapeHtml(library.name)}">
             </label>
             <label>
               副标题
-              <input data-field="en_title" data-library-id="${library.id}" value="${escapeHtml(titleConfig.en_title || "")}" placeholder="例如 MOVIES">
+              <input data-field="en_title" data-library-id="${libraryId}" value="${escapeHtml(titleConfig.en_title || "")}" placeholder="例如 MOVIES">
             </label>
+          </div>
+          <div class="text-layer-box">
+            <label>文字层</label>
+            <div class="layer-source" data-layer-source="${libraryId}">正在匹配…</div>
+            <div class="text-layer-row">
+              <img class="text-layer-thumb ${hasLayer ? "" : "hidden"}" data-text-layer-thumb="${libraryId}" alt="文字层预览" ${hasLayer ? `src="/libraries/${encodeURIComponent(library.id)}/text-layer?v=${state.textLayerVersion || 1}"` : ""}>
+              <div class="text-layer-empty ${hasLayer ? "hidden" : ""}" data-text-layer-empty="${libraryId}">未匹配</div>
+              <div class="mini-actions">
+                <button class="secondary" type="button" data-text-layer-upload="${libraryId}">上传 PNG</button>
+                <button class="secondary" type="button" data-text-layer-delete="${libraryId}" ${hasLayer ? "" : "disabled"}>删除自定义</button>
+                <button class="secondary" type="button" data-preview-library="${libraryId}">预览封面</button>
+                <input class="hidden" type="file" accept="image/png,image/webp,.png,.webp" data-text-layer-file="${libraryId}">
+              </div>
+            </div>
+            <label>
+              内置文字层
+              <select data-overlay-field="builtin_layer" data-library-id="${libraryId}">
+                ${builtinOptions}
+              </select>
+            </label>
+            <div class="builtin-grid">${builtinCards}</div>
+            <div class="hint">当前生效的来源显示在上面。上传的自定义 PNG 优先，保存在 data/text_layers/${libraryId}.png。删掉自定义后，会回到上面选的内置图层；选「自动匹配」时按库名对内置名称。</div>
+            <label class="check-line">
+              <input type="checkbox" data-field="text_overlay_enabled" data-library-id="${libraryId}" ${enabled}>
+              <span>单独调整本库效果</span>
+            </label>
+            <div class="library-override" data-override-panel="${libraryId}">
+              <div class="library-config-fields">
+                ${overlayRange(libraryId, "darken", "压暗", overlayValue(overlay, globalOverlay, "darken"), 0, 1, 0.01, 2)}
+                ${overlayRange(libraryId, "blur_radius", "模糊", overlayValue(overlay, globalOverlay, "blur_radius"), 0, 40, 1, 0)}
+                ${overlayRange(libraryId, "saturation", "饱和度", overlayValue(overlay, globalOverlay, "saturation"), 0, 2, 0.01, 2)}
+                ${overlayRange(libraryId, "vignette", "暗角", overlayValue(overlay, globalOverlay, "vignette"), 0, 1, 0.01, 2)}
+                ${overlayRange(libraryId, "text_scale", "缩放", overlayValue(overlay, globalOverlay, "text_scale"), 0.2, 1.5, 0.01, 2)}
+                ${overlayRange(libraryId, "text_offset_x", "水平偏移", overlayValue(overlay, globalOverlay, "text_offset_x"), -40, 40, 1, 0, "%")}
+                ${overlayRange(libraryId, "text_offset_y", "垂直偏移", overlayValue(overlay, globalOverlay, "text_offset_y"), -40, 40, 1, 0, "%")}
+                <label>
+                  背景条目
+                  <select data-overlay-field="background_pick" data-library-id="${libraryId}">
+                    <option value="random" ${pick === "random" ? "selected" : ""}>每次随机</option>
+                    <option value="latest" ${pick === "latest" ? "selected" : ""}>最近入库</option>
+                    <option value="fixed" ${pick === "fixed" ? "selected" : ""}>固定条目</option>
+                  </select>
+                </label>
+                <label>
+                  固定背景条目 ID
+                  <input data-overlay-field="fixed_item_id" data-library-id="${libraryId}" value="${escapeHtml(overlay.fixed_item_id || "")}" placeholder="选「固定条目」时使用">
+                </label>
+              </div>
+            </div>
           </div>
         </div>
       `;
+    }
+
+    function overlayRange(libraryId, field, label, value, min, max, step, digits, unit = "") {
+      const safeValue = value === undefined || value === null || value === "" ? min : value;
+      return `
+        <label>
+          ${label} <span data-overlay-readout>${escapeHtml(formatOverlayNumber(safeValue, digits))}</span>${unit}
+          <input type="range" data-overlay-field="${field}" data-library-id="${libraryId}" data-digits="${digits}" min="${min}" max="${max}" step="${step}" value="${escapeHtml(safeValue)}">
+        </label>
+      `;
+    }
+
+    function syncOverridePanels() {
+      document.querySelectorAll("[data-override-panel]").forEach((panel) => {
+        const libraryId = panel.dataset.overridePanel;
+        const checkbox = document.querySelector(`[data-field="text_overlay_enabled"][data-library-id="${CSS.escape(libraryId)}"]`);
+        panel.classList.toggle("hidden", !checkbox?.checked);
+      });
+    }
+
+    function libraryField(libraryId, field) {
+      return document.querySelector(`[data-overlay-field="${field}"][data-library-id="${CSS.escape(libraryId)}"]`);
     }
 
     function escapeHtml(value) {
@@ -1474,6 +1837,7 @@
     }
 
     function normalizeStyleName(style) {
+      if (style === "text_overlay") return "文字层叠加";
       const matched = String(style || "").match(/^(static|animated)_(\d+)$/);
       if (!matched) return style || "";
       return `${matched[1] === "animated" ? "动态" : "静态"}风格 ${matched[2]}`;
@@ -1570,6 +1934,18 @@
       document.getElementById("enLineSpacing").value = state.config.cover.en_line_spacing;
       document.getElementById("blurSize").value = state.config.cover.blur_size;
       document.getElementById("colorRatio").value = state.config.cover.color_ratio;
+      const overlay = state.config.cover.text_overlay || {};
+      document.getElementById("overlayDarken").value = overlay.darken ?? 0.45;
+      document.getElementById("overlayBlur").value = overlay.blur_radius ?? 18;
+      document.getElementById("overlaySaturation").value = overlay.saturation ?? 0.85;
+      document.getElementById("overlayVignette").value = overlay.vignette ?? 0.4;
+      document.getElementById("overlayTextScale").value = overlay.text_scale ?? 1;
+      document.getElementById("overlayOffsetX").value = overlay.text_offset_x ?? 0;
+      document.getElementById("overlayOffsetY").value = overlay.text_offset_y ?? 0;
+      document.getElementById("overlayBackgroundPick").value = overlay.background_pick || "random";
+      syncOverlayReadouts();
+      const pickSelect = document.getElementById("overlayBackgroundPick");
+      if (pickSelect.dataset.customized === "true") syncCustomSelect(pickSelect);
       document.getElementById("multiBlur").value = String(state.config.cover.multi_1_blur);
       document.getElementById("saveRecentCovers").value = String(state.config.cover.save_recent_covers);
       document.getElementById("coversHistoryLimit").value = state.config.cover.covers_history_limit_per_library;
@@ -1582,7 +1958,32 @@
       renderWebhookUrl();
     }
 
-    async function saveConfig() {
+    function readOverlayNumber(libraryId, field, fallback) {
+      const input = libraryField(libraryId, field);
+      if (!input) return fallback;
+      const value = Number.parseFloat(input.value);
+      return Number.isFinite(value) ? value : fallback;
+    }
+
+    function libraryTextOverlayFromForm(library) {
+      const enabled = document.querySelector(`[data-field="text_overlay_enabled"][data-library-id="${CSS.escape(library.id)}"]`)?.checked || false;
+      const globalOverlay = state.config?.cover?.text_overlay || {};
+      return {
+        enabled,
+        darken: readOverlayNumber(library.id, "darken", globalOverlay.darken ?? 0.45),
+        blur_radius: Math.round(readOverlayNumber(library.id, "blur_radius", globalOverlay.blur_radius ?? 18)),
+        saturation: readOverlayNumber(library.id, "saturation", globalOverlay.saturation ?? 0.85),
+        vignette: readOverlayNumber(library.id, "vignette", globalOverlay.vignette ?? 0.4),
+        text_scale: readOverlayNumber(library.id, "text_scale", globalOverlay.text_scale ?? 1),
+        text_offset_x: readOverlayNumber(library.id, "text_offset_x", globalOverlay.text_offset_x ?? 0),
+        text_offset_y: readOverlayNumber(library.id, "text_offset_y", globalOverlay.text_offset_y ?? 0),
+        background_pick: libraryField(library.id, "background_pick")?.value || globalOverlay.background_pick || "random",
+        fixed_item_id: (libraryField(library.id, "fixed_item_id")?.value || "").trim(),
+        builtin_layer: libraryField(library.id, "builtin_layer")?.value || "",
+      };
+    }
+
+    function collectConfigFromForm() {
       const config = JSON.parse(JSON.stringify(state.config));
       config.emby.base_url = document.getElementById("baseUrl").value.trim();
       config.emby.api_key = document.getElementById("apiKey").value.trim();
@@ -1607,6 +2008,16 @@
       config.cover.multi_1_blur = document.getElementById("multiBlur").value === "true";
       config.cover.save_recent_covers = document.getElementById("saveRecentCovers").value === "true";
       config.cover.covers_history_limit_per_library = Number.parseInt(document.getElementById("coversHistoryLimit").value || `${config.cover.covers_history_limit_per_library}`, 10) || 10;
+      config.cover.text_overlay = {
+        darken: Number.parseFloat(document.getElementById("overlayDarken").value || "0.45"),
+        blur_radius: Number.parseInt(document.getElementById("overlayBlur").value || "18", 10),
+        saturation: Number.parseFloat(document.getElementById("overlaySaturation").value || "0.85"),
+        vignette: Number.parseFloat(document.getElementById("overlayVignette").value || "0.4"),
+        text_scale: Number.parseFloat(document.getElementById("overlayTextScale").value || "1"),
+        text_offset_x: Number.parseFloat(document.getElementById("overlayOffsetX").value || "0"),
+        text_offset_y: Number.parseFloat(document.getElementById("overlayOffsetY").value || "0"),
+        background_pick: document.getElementById("overlayBackgroundPick").value || "random",
+      };
       config.schedule.enabled = document.getElementById("scheduleEnabled").value === "true";
       config.schedule.cron = document.getElementById("scheduleCron").value.trim() || "0 3 * * *";
       config.webhook.enabled = document.getElementById("webhookEnabled").value === "true";
@@ -1617,11 +2028,17 @@
         config.library_titles = state.libraries.map((library) => ({
           library_id: library.id,
           library_name: library.name,
-          zh_title: (document.querySelector(`[data-field="zh_title"][data-library-id="${library.id}"]`)?.value || library.name).trim(),
-          en_title: (document.querySelector(`[data-field="en_title"][data-library-id="${library.id}"]`)?.value || "").trim(),
+          zh_title: (document.querySelector(`[data-field="zh_title"][data-library-id="${CSS.escape(library.id)}"]`)?.value || library.name).trim(),
+          en_title: (document.querySelector(`[data-field="en_title"][data-library-id="${CSS.escape(library.id)}"]`)?.value || "").trim(),
           bg_color: (state.config.library_titles || []).find((entry) => entry.library_id === library.id || entry.library_name === library.name)?.bg_color || "",
+          text_overlay: libraryTextOverlayFromForm(library),
         }));
       }
+      return config;
+    }
+
+    async function saveConfig() {
+      const config = collectConfigFromForm();
       state.config = await api("/config", {
         method: "PUT",
         body: JSON.stringify(config),
@@ -1650,6 +2067,7 @@
       try {
         const libraries = await api("/libraries");
         state.libraries = libraries;
+        await Promise.all([loadTextLayers(), loadBuiltinLayers()]);
         if (!state.librarySelectionInitialized && state.selectedLibraryIds.length === 0 && libraries.length > 0) {
           state.selectedLibraryIds = libraries.map((library) => library.id);
         } else {
@@ -1658,11 +2076,202 @@
         state.librarySelectionInitialized = true;
         renderLibraryRows();
         updateLibrarySummary(libraries.length);
+        await refreshLayerSources();
       } catch (error) {
         state.libraries = [];
         document.getElementById("libraries").innerHTML = `<div class="item">${error.message}</div>`;
         updateLibrarySummary(0);
       }
+    }
+
+    async function loadTextLayers() {
+      try {
+        const payload = await api("/text-layers");
+        state.textLayerIds = Array.isArray(payload?.library_ids) ? payload.library_ids : [];
+      } catch (error) {
+        state.textLayerIds = [];
+      }
+    }
+
+    async function loadBuiltinLayers() {
+      try {
+        const payload = await api("/text-layers/builtins");
+        state.builtinLayers = Array.isArray(payload?.layers) ? payload.layers : [];
+      } catch (error) {
+        state.builtinLayers = [];
+      }
+    }
+
+    let layerSourceRequest = 0;
+
+    async function refreshLayerSources() {
+      const requestId = ++layerSourceRequest;
+      if (!state.libraries.length) return;
+      const items = state.libraries.map((library) => ({
+        library_id: library.id,
+        library_name: library.name,
+        builtin_layer: libraryField(library.id, "builtin_layer")?.value || "",
+      }));
+      try {
+        const payload = await api("/text-layers/resolve", {
+          method: "POST",
+          body: JSON.stringify({ items }),
+        });
+        if (requestId !== layerSourceRequest) return;
+        (Array.isArray(payload) ? payload : []).forEach(applyLayerStatus);
+      } catch (error) {
+        if (requestId === layerSourceRequest) {
+          showNotice(error.message || "文字层匹配失败", "warn", 4200);
+        }
+      }
+    }
+
+    function applyLayerStatus(status) {
+      const libraryId = status.library_id;
+      const source = document.querySelector(`[data-layer-source="${CSS.escape(libraryId)}"]`);
+      if (source) {
+        source.textContent = status.label || "未匹配";
+        source.classList.toggle("warn", status.source === "none");
+      }
+      const thumb = document.querySelector(`[data-text-layer-thumb="${CSS.escape(libraryId)}"]`);
+      const empty = document.querySelector(`[data-text-layer-empty="${CSS.escape(libraryId)}"]`);
+      const available = status.source && status.source !== "none";
+      if (thumb) {
+        thumb.classList.toggle("hidden", !available);
+        if (status.source === "custom") {
+          thumb.src = `/libraries/${encodeURIComponent(libraryId)}/text-layer?v=${Date.now()}`;
+        } else if (available && status.name) {
+          thumb.src = `/text-layers/builtins/${encodeURIComponent(status.name)}/thumb`;
+        }
+      }
+      if (empty) empty.classList.toggle("hidden", available);
+      const remove = document.querySelector(`[data-text-layer-delete="${CSS.escape(libraryId)}"]`);
+      if (remove) remove.disabled = status.source !== "custom";
+      const selected = libraryField(libraryId, "builtin_layer")?.value || "";
+      document.querySelectorAll(`[data-builtin-pick="${CSS.escape(libraryId)}"]`).forEach((button) => {
+        button.classList.toggle("active", button.dataset.builtinName === selected);
+        button.classList.toggle("matched", !selected && status.source === "auto" && button.dataset.builtinName === status.name);
+      });
+    }
+
+    function chooseBuiltinLayer(libraryId, name) {
+      const select = libraryField(libraryId, "builtin_layer");
+      if (!select) return;
+      select.value = select.value === name ? "" : name;
+      syncCustomSelect(select);
+      setDirty(true);
+      refreshLayerSources();
+    }
+
+    async function uploadTextLayer(libraryId, file) {
+      if (!file) return;
+      const body = new FormData();
+      body.append("file", file, file.name || "text-layer.png");
+      const response = await fetch(`/libraries/${encodeURIComponent(libraryId)}/text-layer`, {
+        method: "POST",
+        body,
+      });
+      if (!response.ok) {
+        throw new Error(await readResponseError(response, "上传文字层失败"));
+      }
+      if (!state.textLayerIds.includes(libraryId)) state.textLayerIds.push(libraryId);
+      await refreshLayerSources();
+      showNotice("自定义文字层已更新，下次生成会直接使用");
+    }
+
+    async function readResponseError(response, fallback) {
+      const type = response.headers.get("content-type") || "";
+      if (type.includes("application/json")) {
+        const payload = await response.json().catch(() => null);
+        const detail = payload?.detail || payload?.message;
+        if (typeof detail === "string" && detail) return detail;
+      }
+      const text = await response.text().catch(() => "");
+      return text || fallback;
+    }
+
+    async function deleteTextLayer(libraryId) {
+      if (!state.textLayerIds.includes(libraryId)) {
+        showNotice("这个库没有自定义文字层", "warn");
+        return;
+      }
+      if (!window.confirm("删除自定义文字层？之后会改用已选的内置图层，或按库名自动匹配。")) return;
+      const response = await fetch(`/libraries/${encodeURIComponent(libraryId)}/text-layer`, { method: "DELETE" });
+      if (!response.ok) {
+        throw new Error(await readResponseError(response, "删除文字层失败"));
+      }
+      state.textLayerIds = state.textLayerIds.filter((id) => id !== libraryId);
+      await refreshLayerSources();
+      showNotice("已删除自定义文字层");
+    }
+
+    function closePreview() {
+      document.getElementById("previewModal").classList.add("hidden");
+      const image = document.getElementById("previewImage");
+      image.removeAttribute("src");
+    }
+
+    async function previewLibrary(libraryId) {
+      const library = state.libraries.find((item) => item.id === libraryId);
+      const button = document.querySelector(`[data-preview-library="${CSS.escape(libraryId)}"]`);
+      if (button) button.disabled = true;
+      showNotice("正在生成预览，不会上传到 Emby");
+      try {
+        const config = collectConfigFromForm();
+        const libraryTitle = (config.library_titles || []).find((item) => item.library_id === libraryId);
+        const response = await fetch(`/libraries/${encodeURIComponent(libraryId)}/preview`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text_overlay: config.cover.text_overlay,
+            library_text_overlay: libraryTitle?.text_overlay || null,
+            resolution: config.cover.resolution,
+            custom_width: config.cover.custom_width,
+            custom_height: config.cover.custom_height,
+          }),
+        });
+        const type = response.headers.get("content-type") || "";
+        const payload = type.includes("application/json") ? await response.json() : null;
+        if (!response.ok) {
+          const detail = payload?.detail || payload?.message || "预览失败";
+          throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
+        }
+        state.previewLibraryId = libraryId;
+        state.previewItemId = payload.source_item_id || "";
+        document.getElementById("previewTitle").textContent = `${library?.name || "媒体库"} 预览`;
+        document.getElementById("previewImage").src = `data:${payload.content_type};base64,${payload.image_base64}`;
+        const kind = SOURCE_KIND_LABEL[payload.source_kind] || payload.source_kind || "背景";
+        const itemName = payload.source_item_name ? `「${payload.source_item_name}」` : "";
+        const itemId = payload.source_item_id ? `，条目 ${payload.source_item_id}` : "";
+        const layerLabel = payload.text_layer_label ? `文字层：${payload.text_layer_label}。` : "";
+        document.getElementById("previewMeta").textContent = `使用${kind}${itemName}${itemId}。${layerLabel}这张图只在本地预览，没有写回 Emby。`;
+        document.getElementById("lockPreviewItem").classList.toggle("hidden", !payload.source_item_id);
+        document.getElementById("previewModal").classList.remove("hidden");
+      } catch (error) {
+        showNotice(error.message || "预览失败", "warn", 5200);
+      } finally {
+        if (button) button.disabled = false;
+      }
+    }
+
+    function lockPreviewItem() {
+      const libraryId = state.previewLibraryId;
+      const itemId = state.previewItemId;
+      if (!libraryId || !itemId) return;
+      const input = libraryField(libraryId, "fixed_item_id");
+      const pick = libraryField(libraryId, "background_pick");
+      if (input) input.value = itemId;
+      if (pick) {
+        pick.value = "fixed";
+        syncCustomSelect(pick);
+      }
+      const enabled = document.querySelector(`[data-field="text_overlay_enabled"][data-library-id="${CSS.escape(libraryId)}"]`);
+      if (enabled && !enabled.checked) {
+        enabled.checked = true;
+        syncOverridePanels();
+      }
+      setDirty(true);
+      showNotice("已锁定这次预览的条目，保存设置后生效");
     }
 
     async function loadJobs() {
@@ -1861,14 +2470,77 @@
       }
     });
     document.getElementById("panelSettings").addEventListener("input", (event) => {
-      if (event.target.matches("input:not([readonly]), textarea, select")) {
+      if (event.target.matches("[data-overlay-field], #overlayDarken, #overlayBlur, #overlaySaturation, #overlayVignette, #overlayTextScale, #overlayOffsetX, #overlayOffsetY")) {
+        syncOverlayReadouts();
+      }
+      if (event.target.matches("input:not([readonly]):not([type='file']), textarea, select")) {
         setDirty(true);
       }
     });
     document.getElementById("panelSettings").addEventListener("change", (event) => {
-      if (event.target.matches("input:not([readonly]), textarea, select")) {
+      if (event.target.matches("[data-field='text_overlay_enabled']")) {
+        syncOverridePanels();
+      }
+      if (event.target.matches("input:not([readonly]):not([type='file']), textarea, select")) {
         setDirty(true);
       }
+    });
+    document.getElementById("libraries").addEventListener("change", async (event) => {
+      const target = event.target;
+      if (target.matches("[data-library-select]")) {
+        const id = target.dataset.librarySelect;
+        if (target.checked) {
+          if (!state.selectedLibraryIds.includes(id)) state.selectedLibraryIds.push(id);
+        } else {
+          state.selectedLibraryIds = state.selectedLibraryIds.filter((item) => item !== id);
+        }
+        updateLibrarySummary(state.libraries.length);
+        return;
+      }
+      if (target.matches("[data-overlay-field='builtin_layer']")) {
+        refreshLayerSources();
+      }
+      if (target.matches("[data-text-layer-file]")) {
+        const file = target.files?.[0];
+        const libraryId = target.dataset.textLayerFile;
+        target.value = "";
+        if (!file) return;
+        try {
+          await uploadTextLayer(libraryId, file);
+        } catch (error) {
+          showNotice(error.message || "上传文字层失败", "warn", 5200);
+        }
+      }
+    });
+    document.getElementById("libraries").addEventListener("click", async (event) => {
+      const builtin = event.target.closest("[data-builtin-pick]");
+      if (builtin) {
+        chooseBuiltinLayer(builtin.dataset.builtinPick, builtin.dataset.builtinName || "");
+        return;
+      }
+      const upload = event.target.closest("[data-text-layer-upload]");
+      if (upload) {
+        document.querySelector(`[data-text-layer-file="${CSS.escape(upload.dataset.textLayerUpload)}"]`)?.click();
+        return;
+      }
+      const remove = event.target.closest("[data-text-layer-delete]");
+      if (remove) {
+        try {
+          await deleteTextLayer(remove.dataset.textLayerDelete);
+        } catch (error) {
+          showNotice(error.message || "删除文字层失败", "warn", 4200);
+        }
+        return;
+      }
+      const preview = event.target.closest("[data-preview-library]");
+      if (preview) {
+        await previewLibrary(preview.dataset.previewLibrary);
+      }
+    });
+    document.getElementById("closePreview").addEventListener("click", closePreview);
+    document.getElementById("lockPreviewItem").addEventListener("click", lockPreviewItem);
+    document.getElementById("previewModal").addEventListener("click", (event) => {
+      if (event.target.id === "previewModal") closePreview();
     });
     async function init() {
       await loadConfig();

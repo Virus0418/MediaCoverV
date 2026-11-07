@@ -115,6 +115,7 @@ class ConfigRepository:
             config.paths.covers_input_dir,
             config.paths.recent_covers_dir,
             config.paths.fonts_dir,
+            config.paths.text_layers_dir,
         ]:
             resolve_path(self.project_root, raw_path).mkdir(parents=True, exist_ok=True)
 
