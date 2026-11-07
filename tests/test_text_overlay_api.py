@@ -105,6 +105,12 @@ class TextOverlayApiTests(unittest.TestCase):
         )
         assert response.status_code == 200, response.text
 
+    def setUp(self) -> None:
+        layer_dir = Path(__file__).resolve().parents[1] / "data" / "text_layers"
+        if layer_dir.exists():
+            for path in layer_dir.glob("*"):
+                path.unlink(missing_ok=True)
+
     @classmethod
     def tearDownClass(cls) -> None:
         cls.server.shutdown()
@@ -157,9 +163,50 @@ class TextOverlayApiTests(unittest.TestCase):
 
         removed = self.client.delete("/libraries/lib1/text-layer")
         self.assertEqual(removed.status_code, 200, removed.text)
-        missing = self.client.post("/libraries/lib1/preview", json={"resolution": "720p"})
-        self.assertEqual(missing.status_code, 400)
-        self.assertIn("文字层", missing.json()["detail"])
+        fallback = self.client.post("/libraries/lib1/preview", json={"resolution": "480p"})
+        self.assertEqual(fallback.status_code, 200, fallback.text)
+        self.assertEqual(fallback.json()["text_layer_source"], "auto")
+        self.assertEqual(fallback.json()["text_layer_name"], "动画电影")
+        self.assertEqual(fallback.json()["text_layer_label"], "自动匹配:动画电影")
+        self.assertEqual(_FakeEmby.posts, [])
+
+    def test_builtin_choice_and_unmatched(self) -> None:
+        listed = self.client.get("/text-layers/builtins")
+        self.assertEqual(listed.status_code, 200, listed.text)
+        names = [item["name"] for item in listed.json()["layers"]]
+        self.assertIn("综艺", names)
+        thumb = self.client.get("/text-layers/builtins/综艺/thumb")
+        self.assertEqual(thumb.status_code, 200)
+        self.assertEqual(thumb.headers["content-type"], "image/png")
+        self.assertLess(len(thumb.content), 200_000)
+        self.assertEqual(self.client.get("/text-layers/builtins/不存在/thumb").status_code, 404)
+
+        resolved = self.client.post(
+            "/text-layers/resolve",
+            json={
+                "items": [
+                    {"library_id": "lib1", "library_name": "动画电影", "builtin_layer": ""},
+                    {"library_id": "lib1", "library_name": "动画电影", "builtin_layer": "综艺"},
+                    {"library_id": "other", "library_name": "没有这个分类", "builtin_layer": ""},
+                    {"library_id": "../x", "library_name": "综艺", "builtin_layer": ""},
+                ]
+            },
+        )
+        self.assertEqual(resolved.status_code, 200, resolved.text)
+        rows = {row["library_id"] + row["label"]: row for row in resolved.json()}
+        self.assertEqual(rows["lib1自动匹配:动画电影"]["source"], "auto")
+        self.assertEqual(rows["lib1内置:综艺"]["source"], "builtin")
+        self.assertEqual(rows["other未匹配"]["source"], "none")
+        self.assertEqual(rows["../x未匹配"]["source"], "none")
+
+        preview = self.client.post(
+            "/libraries/lib1/preview",
+            json={"resolution": "480p", "library_text_overlay": {"builtin_layer": "综艺", "enabled": False}},
+        )
+        self.assertEqual(preview.status_code, 200, preview.text)
+        self.assertEqual(preview.json()["text_layer_source"], "builtin")
+        self.assertEqual(preview.json()["text_layer_name"], "综艺")
+        self.assertEqual(_FakeEmby.posts, [])
 
 
 if __name__ == "__main__":

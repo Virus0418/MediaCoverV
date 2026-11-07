@@ -107,6 +107,7 @@ class LibraryTextOverlayOverride(BaseModel):
     text_offset_y: float | None = None
     background_pick: BackgroundPick | None = None
     fixed_item_id: str = ""
+    builtin_layer: str = ""
 
     @field_validator(
         "darken",
@@ -164,6 +165,14 @@ class LibraryTextOverlayOverride(BaseModel):
     @classmethod
     def strip_item_id(cls, value: str) -> str:
         return str(value or "").strip()
+
+    @field_validator("builtin_layer")
+    @classmethod
+    def strip_builtin_layer(cls, value: str) -> str:
+        text = str(value or "").strip()
+        if "/" in text or "\\" in text or ".." in text:
+            return ""
+        return text[:64]
 
 
 class CoverSettings(BaseModel):
@@ -263,6 +272,30 @@ class PreviewResponse(BaseModel):
     source_kind: str = ""
     width: int = 0
     height: int = 0
+    text_layer_source: str = ""
+    text_layer_name: str = ""
+    text_layer_label: str = ""
+
+
+class TextLayerResolveItem(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    library_id: str
+    library_name: str = ""
+    builtin_layer: str = ""
+
+
+class TextLayerResolveRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    items: list[TextLayerResolveItem] = Field(default_factory=list)
+
+
+class TextLayerStatus(BaseModel):
+    library_id: str
+    source: Literal["custom", "builtin", "auto", "none"]
+    name: str = ""
+    label: str = ""
 
 
 class HistoryRecord(BaseModel):

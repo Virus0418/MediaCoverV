@@ -17,12 +17,17 @@ from mediacovergenerator.models import (
     LibraryInfo,
     PreviewRequest,
     PreviewResponse,
+    TextLayerResolveRequest,
+    TextLayerStatus,
 )
 from mediacovergenerator.text_layers import (
     TextLayerMissingError,
     apply_preview_overrides,
+    builtin_thumb_file,
     delete_text_layer,
+    list_builtin_layers,
     list_text_layer_ids,
+    resolve_text_layer,
     store_text_layer,
     text_layer_file,
 )
@@ -115,6 +120,48 @@ def get_libraries() -> list[LibraryInfo]:
 def get_text_layers() -> dict[str, list[str]]:
     config = config_repository.load()
     return {"library_ids": list_text_layer_ids(PROJECT_ROOT, config)}
+
+
+@app.get("/text-layers/builtins")
+def get_builtin_text_layers() -> dict[str, list[dict[str, str]]]:
+    return {"layers": [{"name": name} for name in list_builtin_layers()]}
+
+
+@app.get("/text-layers/builtins/{name}/thumb")
+def get_builtin_text_layer_thumb(name: str) -> FileResponse:
+    path = builtin_thumb_file(name)
+    if path is None:
+        raise HTTPException(status_code=404, detail="没有这张内置文字层")
+    return FileResponse(path, media_type="image/png", headers={"Cache-Control": "public, max-age=86400"})
+
+
+@app.post("/text-layers/resolve", response_model=list[TextLayerStatus])
+def resolve_text_layers(request: TextLayerResolveRequest) -> list[TextLayerStatus]:
+    config = config_repository.load()
+    statuses: list[TextLayerStatus] = []
+    for item in request.items:
+        try:
+            found = resolve_text_layer(
+                PROJECT_ROOT,
+                config,
+                item.library_id,
+                item.library_name,
+                explicit_builtin=item.builtin_layer,
+            )
+        except ValueError:
+            found = None
+        if found is None:
+            statuses.append(TextLayerStatus(library_id=item.library_id, source="none", label="未匹配"))
+        else:
+            statuses.append(
+                TextLayerStatus(
+                    library_id=item.library_id,
+                    source=found.source,
+                    name=found.name,
+                    label=found.label,
+                )
+            )
+    return statuses
 
 
 @app.get("/libraries/{library_id}/text-layer")

@@ -27,6 +27,6 @@ alwaysApply: true
 
 ### 文字层叠加
 
-- 目标：新增封面风格，用媒体库剧照铺满背景，再叠每个库自己的透明 PNG
-- 做法：风格键 `text_overlay`。背景优先 Backdrop，没有再用海报。文字层存在 `data/text_layers/<库ID>.png`，页面可上传、替换、删除和预览。效果参数写在 `cover.text_overlay`，单库可用 `library_titles[].text_overlay` 覆盖。没有 PNG 的库跳过并写明原因，不回退到其他风格
-- 要点：预览接口不上传 Emby。模糊、压暗、饱和度、暗角和文字层缩放都在渲染时从磁盘读取最新 PNG
+- 目标：新增封面风格，用媒体库剧照铺满背景，再叠透明文字层
+- 做法：风格键 `text_overlay`。背景优先 Backdrop，没有再用海报。文字层按顺序选用：`data/text_layers/<库ID>.png`、页面指定的内置层、按库名自动匹配内置层。内置 PNG 在 `assets/text_layers/picStyle1/`，缩略图在其子目录，渲染时只打开当前这一张。选不中就跳过并写明原因，不回退到其他风格
+- 要点：`library_titles[].text_overlay.builtin_layer` 为空表示自动匹配，不依赖「单独调整本库效果」。预览接口不上传 Emby

@@ -14,11 +14,9 @@ from mediacovergenerator.logging import logger
 from mediacovergenerator.models import AppConfig, HistoryRecord, LibraryInfo, PreviewResponse
 from mediacovergenerator.storage import HistoryRepository
 from mediacovergenerator.text_layers import (
-    TextLayerMissingError,
     fixed_item_id_for,
-    missing_text_layer_message,
+    require_text_layer,
     resolve_text_overlay_settings,
-    text_layer_file,
 )
 from mediacovergenerator.titles import TitleConfigResolver
 
@@ -115,8 +113,7 @@ class LibraryUpdateService:
         if not library:
             raise KeyError(f"Library not found: {library_id}")
         library_name = library["Name"]
-        self._ensure_text_layer(config, library_name, str(library_id))
-        layer_path = text_layer_file(self.project_root, config, str(library_id))
+        layer = self._ensure_text_layer(config, library_name, str(library_id))
         settings = resolve_text_overlay_settings(config, str(library_id))
         stop_event = threading.Event()
         with tempfile.TemporaryDirectory(prefix="mcg-preview-") as temporary:
@@ -126,7 +123,7 @@ class LibraryUpdateService:
 
             encoded = create_style_text_overlay(
                 str(background),
-                str(layer_path),
+                str(layer.path),
                 resolution_config=self._get_generator()._resolution_config(config),
                 darken=settings.darken,
                 blur_radius=settings.blur_radius,
@@ -147,14 +144,13 @@ class LibraryUpdateService:
             source_kind=source.get("source_kind", ""),
             width=resolution.width,
             height=resolution.height,
+            text_layer_source=layer.source,
+            text_layer_name=layer.name,
+            text_layer_label=layer.label,
         )
 
-    def _ensure_text_layer(self, config: AppConfig, library_name: str, library_id: str) -> None:
-        if text_layer_file(self.project_root, config, library_id).is_file():
-            return
-        message = missing_text_layer_message(library_name, library_id)
-        logger.warning(message)
-        raise TextLayerMissingError(message)
+    def _ensure_text_layer(self, config: AppConfig, library_name: str, library_id: str):
+        return require_text_layer(self.project_root, config, library_id, library_name)
 
     def _prepare_library_images(
         self,

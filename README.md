@@ -307,23 +307,26 @@ data/input/电影/3.jpg
 
 ### 6.2 文字层怎么上传
 
-文字层叠加（风格 4）不在封面上画字，而是把你做好的透明 PNG 盖上去。
+文字层叠加（风格 4）不在封面上画字，而是把透明 PNG 盖上去。
 
-每个 Emby 媒体库一张图，互不影响：
+每个媒体库按这个顺序找文字层：
 
-1. 打开页面，刷新媒体库
-2. 在对应媒体库卡片的「文字层」里点 `上传 PNG`
-3. 缩略图出来之后，就可以预览或生成
+1. 你上传的自定义图：`data/text_layers/<媒体库ID>.png`
+2. 在该库卡片里指定的内置图层
+3. 按库名自动匹配内置图层：先完全一致，再看内置名称和库名谁包含谁
+4. 还是没有：跳过这个库，任务日志和页面都会写明原因，不会改用风格 1/2/3
 
-也可以直接把文件放到：
+内置图层跟着程序走，在 `mediacovergenerator/assets/text_layers/picStyle1/`，更新镜像就会带上，不放在数据盘里。目前有：动漫、动画电影、华语电影、合集、国产剧、外语电影、日韩剧、欧美剧、纪录片、综艺。
+
+页面上每个库会标出当前来源：`自定义`、`内置:名称`、`自动匹配:名称` 或 `未匹配`。可以改下拉框，也可以点缩略图。删掉自定义上传后，会回到内置或自动匹配。
+
+也可以直接把自定义文件放到：
 
 ```text
 data/text_layers/<媒体库ID>.png
 ```
 
 容器里的路径是 `/app/data/text_layers/<媒体库ID>.png`。替换这个文件，或者在页面上重新上传，下一次生成就会用新图，不用重启容器。
-
-没有文字层的库会跳过，不会改用风格 1/2/3。任务日志和任务详情里会写明原因，其他已上传的库继续生成。
 
 这一风格的背景固定优先剧照 / Fanart，没有剧照才用海报，不受「选图优先来源」影响。背景用哪一条，由「背景条目」决定：
 
@@ -502,6 +505,9 @@ MediaCoverGenerator/
 - `PUT /config`
 - `GET /libraries`
 - `GET /text-layers`
+- `GET /text-layers/builtins`
+- `GET /text-layers/builtins/{name}/thumb`
+- `POST /text-layers/resolve`
 - `GET /libraries/{libraryId}/text-layer`
 - `POST /libraries/{libraryId}/text-layer`
 - `DELETE /libraries/{libraryId}/text-layer`

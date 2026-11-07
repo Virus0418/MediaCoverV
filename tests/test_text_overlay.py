@@ -10,6 +10,12 @@ from mediacovergenerator.models import AppConfig, LibraryTextOverlayOverride, Li
 from mediacovergenerator.style.style_text_overlay import create_style_text_overlay
 from mediacovergenerator.text_layers import (
     TextLayerMissingError,
+    builtin_layer_file,
+    builtin_thumb_file,
+    list_builtin_layers,
+    match_builtin_name,
+    require_text_layer,
+    resolve_text_layer,
     resolve_text_overlay_settings,
     store_text_layer,
 )
@@ -108,6 +114,96 @@ class TextOverlayTests(unittest.TestCase):
             Image.new("RGB", (8, 8), (1, 2, 3)).save(jpeg, format="JPEG")
             with self.assertRaises(ValueError):
                 store_text_layer(root, config, "lib1", jpeg.getvalue())
+
+
+class TextLayerResolutionTests(unittest.TestCase):
+    def test_match_exact_then_contains_either_way(self) -> None:
+        names = ["动漫", "动画电影", "国产剧", "电影", "剧集"]
+        self.assertEqual(match_builtin_name("动画电影", names), "动画电影")
+        self.assertEqual(match_builtin_name("我的国产剧", names), "国产剧")
+        self.assertEqual(match_builtin_name("动画", names), "动画电影")
+        self.assertEqual(match_builtin_name("电影剧集", names), "剧集")
+        self.assertIsNone(match_builtin_name("纪录片", names))
+        self.assertIsNone(match_builtin_name("   ", names))
+
+    def test_resolution_order(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            builtin = root / "builtins"
+            builtin.mkdir()
+            for name in ("动漫", "动画电影", "综艺"):
+                image = Image.new("RGBA", (4, 4), (255, 255, 255, 200))
+                image.save(builtin / f"{name}.png")
+                image.close()
+            config = AppConfig()
+            config.paths.text_layers_dir = str(root / "layers")
+
+            auto = resolve_text_layer(root, config, "libA", "动画电影", builtin_dir=builtin)
+            self.assertEqual((auto.source, auto.name, auto.label), ("auto", "动画电影", "自动匹配:动画电影"))
+
+            config.library_titles = [
+                LibraryTitleConfig(
+                    library_id="libA",
+                    library_name="动画电影",
+                    text_overlay=LibraryTextOverlayOverride(builtin_layer="综艺"),
+                )
+            ]
+            chosen = resolve_text_layer(root, config, "libA", "动画电影", builtin_dir=builtin)
+            self.assertEqual((chosen.source, chosen.name, chosen.label), ("builtin", "综艺", "内置:综艺"))
+
+            config.library_titles[0].text_overlay.builtin_layer = "不存在"
+            fallback = resolve_text_layer(root, config, "libA", "动画电影", builtin_dir=builtin)
+            self.assertEqual(fallback.source, "auto")
+
+            explicit = resolve_text_layer(
+                root,
+                config,
+                "libA",
+                "随便",
+                builtin_dir=builtin,
+                explicit_builtin="动漫",
+            )
+            self.assertEqual((explicit.source, explicit.name), ("builtin", "动漫"))
+
+            custom_dir = root / "layers"
+            custom_dir.mkdir()
+            image = Image.new("RGBA", (4, 4), (255, 0, 0, 255))
+            image.save(custom_dir / "libA.png")
+            image.close()
+            custom = resolve_text_layer(
+                root,
+                config,
+                "libA",
+                "动画电影",
+                builtin_dir=builtin,
+                explicit_builtin="综艺",
+            )
+            self.assertEqual(custom.source, "custom")
+            self.assertEqual(custom.label, "自定义")
+            self.assertEqual(custom.path.name, "libA.png")
+
+            missing = resolve_text_layer(root, config, "libB", "没有这种库", builtin_dir=builtin, explicit_builtin="")
+            self.assertIsNone(missing)
+            with self.assertRaises(TextLayerMissingError) as caught:
+                require_text_layer(root, AppConfig(paths=config.paths), "libB", "没有这种库")
+            self.assertIn("没有可用的文字层", str(caught.exception))
+
+    def test_shipped_layers_stay_full_resolution(self) -> None:
+        self.assertEqual(
+            set(list_builtin_layers()),
+            {"动漫", "动画电影", "华语电影", "合集", "国产剧", "外语电影", "日韩剧", "欧美剧", "纪录片", "综艺"},
+        )
+        path = builtin_layer_file("动漫")
+        self.assertIsNotNone(path)
+        with Image.open(path) as image:
+            self.assertEqual(image.size, (3840, 2160))
+            low, high = image.getchannel("A").getextrema()
+        self.assertEqual((low, high), (0, 255))
+        thumb = builtin_thumb_file("动漫")
+        self.assertIsNotNone(thumb)
+        self.assertLess(thumb.stat().st_size, path.stat().st_size)
+        with Image.open(thumb) as image:
+            self.assertLessEqual(max(image.size), 480)
 
 
 if __name__ == "__main__":

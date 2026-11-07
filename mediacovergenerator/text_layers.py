@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
 
@@ -19,6 +20,23 @@ from mediacovergenerator.storage import resolve_path
 
 class TextLayerMissingError(RuntimeError):
     """媒体库没有可用的文字层 PNG。生成时跳过该库。"""
+
+
+@dataclass(frozen=True)
+class TextLayerResolution:
+    path: Path
+    source: str
+    name: str
+
+    @property
+    def label(self) -> str:
+        if self.source == "custom":
+            return "自定义"
+        if self.source == "builtin":
+            return f"内置:{self.name}"
+        if self.source == "auto":
+            return f"自动匹配:{self.name}"
+        return "未匹配"
 
 
 _LIBRARY_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}")
@@ -58,6 +76,57 @@ def list_text_layer_ids(project_root: Path, config: AppConfig) -> list[str]:
     if not directory.is_dir():
         return []
     return sorted(path.stem for path in directory.glob("*.png") if path.is_file())
+
+
+def builtin_layers_directory() -> Path:
+    """随程序发布的内置文字层。只列这一层的 PNG，缩略图放在子目录里。"""
+    return Path(__file__).resolve().parent / "assets" / "text_layers" / "picStyle1"
+
+
+def list_builtin_layers(directory: Path | None = None) -> list[str]:
+    directory = directory or builtin_layers_directory()
+    if not directory.is_dir():
+        return []
+    return sorted(path.stem for path in directory.glob("*.png") if path.is_file())
+
+
+def builtin_layer_file(name: str, directory: Path | None = None) -> Path | None:
+    directory = directory or builtin_layers_directory()
+    clean = str(name or "").strip()
+    if not clean or clean not in set(list_builtin_layers(directory)):
+        return None
+    path = directory / f"{clean}.png"
+    return path if path.is_file() else None
+
+
+def builtin_thumb_file(name: str, directory: Path | None = None) -> Path | None:
+    layer = builtin_layer_file(name, directory)
+    if layer is None:
+        return None
+    thumb = layer.parent / "thumbs" / layer.name
+    return thumb if thumb.is_file() else None
+
+
+def match_builtin_name(library_name: str, names: list[str]) -> str | None:
+    """先精确匹配库名，再看名称互相包含。同长度时按名称排序取第一个。"""
+    library_name = (library_name or "").strip()
+    if not library_name:
+        return None
+    for name in names:
+        if name == library_name:
+            return name
+    contained = [name for name in names if name and (name in library_name or library_name in name)]
+    if not contained:
+        return None
+    contained.sort(key=lambda item: (-len(item), item))
+    return contained[0]
+
+
+def selected_builtin_name(config: AppConfig, library_id: str) -> str:
+    item = find_library_title(config, library_id)
+    if item and item.text_overlay and item.text_overlay.builtin_layer:
+        return item.text_overlay.builtin_layer.strip()
+    return ""
 
 
 def store_text_layer(project_root: Path, config: AppConfig, library_id: str, raw: bytes) -> Path:
@@ -166,8 +235,53 @@ def apply_preview_overrides(config: AppConfig, library_id: str, request: Preview
     return config.model_copy(update={"cover": cover, "library_titles": library_titles})
 
 
+def resolve_text_layer(
+    project_root: Path,
+    config: AppConfig,
+    library_id: str,
+    library_name: str,
+    *,
+    builtin_dir: Path | None = None,
+    explicit_builtin: str | None = None,
+) -> TextLayerResolution | None:
+    """自定义上传优先，其次是页面指定的内置层，再按库名自动匹配。都没有就返回 None。"""
+    custom = text_layer_file(project_root, config, library_id)
+    if custom.is_file():
+        return TextLayerResolution(path=custom, source="custom", name="")
+
+    explicit = selected_builtin_name(config, library_id) if explicit_builtin is None else str(explicit_builtin or "").strip()
+    if explicit:
+        chosen = builtin_layer_file(explicit, builtin_dir)
+        if chosen is not None:
+            return TextLayerResolution(path=chosen, source="builtin", name=explicit)
+        logger.warning("媒体库「%s」指定的内置文字层「%s」不存在，改为按库名自动匹配。", library_name, explicit)
+
+    matched = match_builtin_name(library_name, list_builtin_layers(builtin_dir))
+    if matched:
+        path = builtin_layer_file(matched, builtin_dir)
+        if path is not None:
+            return TextLayerResolution(path=path, source="auto", name=matched)
+    return None
+
+
+def require_text_layer(
+    project_root: Path,
+    config: AppConfig,
+    library_id: str,
+    library_name: str,
+) -> TextLayerResolution:
+    found = resolve_text_layer(project_root, config, library_id, library_name)
+    if found is None:
+        message = missing_text_layer_message(library_name, library_id)
+        logger.warning(message)
+        raise TextLayerMissingError(message)
+    logger.info("媒体库「%s」文字层来源：%s", library_name, found.label)
+    return found
+
+
 def missing_text_layer_message(library_name: str, library_id: str) -> str:
     return (
-        f"媒体库「{library_name}」没有文字层 PNG，已跳过。"
-        f"请在页面为该库上传透明图片（保存为 data/text_layers/{library_id}.png）后再生成。"
+        f"媒体库「{library_name}」没有可用的文字层，已跳过。"
+        f"可以上传自定义 PNG（data/text_layers/{library_id}.png），"
+        "或在页面选择内置文字层；库名能对上时也会自动匹配内置图层。"
     )

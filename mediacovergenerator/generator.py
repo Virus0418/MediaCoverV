@@ -189,18 +189,10 @@ class PosterGenerator:
         raise ValueError(f"Unsupported style: {style}")
 
     def _render_text_overlay(self, config: AppConfig, library_name: str, library_id: str) -> str:
-        from mediacovergenerator.text_layers import (
-            TextLayerMissingError,
-            missing_text_layer_message,
-            resolve_text_overlay_settings,
-            text_layer_file,
-        )
+        from mediacovergenerator.text_layers import require_text_layer, resolve_text_overlay_settings
 
-        layer_path = text_layer_file(self.project_root, config, library_id)
-        if not layer_path.is_file():
-            message = missing_text_layer_message(library_name, library_id)
-            logger.warning(message)
-            raise TextLayerMissingError(message)
+        layer = require_text_layer(self.project_root, config, library_id, library_name)
+        layer_path = layer.path
         background = self.library_cache_dir(config, library_name) / "1.jpg"
         if not background.is_file():
             raise RuntimeError(f"媒体库「{library_name}」没有可用的背景图")
